@@ -170,45 +170,49 @@ defmodule BBCode.Parser do
     repeat(lookahead_not(string("[/")) |> parsec(:root_stanza)) |> eos()
   )
 
-  defp emit_tree_node_newline(_rest, _args, context, _line, _offset),
-    do: {[{:br}], context}
+  defp emit_tree_node_newline(rest, _args, context, _line, _offset),
+    do: {rest, [{:br}], context}
 
-  defp emit_tree_node_star(_rest, [nodes], context, _line, _offset),
-    do: {[{:li, nodes}], context}
+  defp emit_tree_node_star(rest, [nodes], context, _line, _offset),
+    do: {rest, [{:li, nodes}], context}
 
   defp emit_tree_node_size_property(
-         _rest,
+         rest,
          [tag, [tag, width, height, inside]],
          context,
          _line,
          _offset
        ),
-       do: {[{String.to_atom(tag), width, height, inside}], context}
+       do: {rest, [{String.to_atom(tag), width, height, inside}], context}
 
-  defp emit_tree_node_property(_rest, [tag, [tag, property, inside]], context, _line, _offset),
-    do: {[{String.to_atom(tag), property, inside}], context}
+  defp emit_tree_node_property(rest, [tag, [tag, property, inside]], context, _line, _offset),
+    do: {rest, [{String.to_atom(tag), property, inside}], context}
 
-  defp emit_tree_node_property(_rest, [tag, [tag, property | nodes]], context, _line, _offset),
-    do: {[{String.to_atom(tag), property, nodes}], context}
+  defp emit_tree_node_property(rest, [tag, [tag, property | nodes]], context, _line, _offset),
+    do: {rest, [{String.to_atom(tag), property, nodes}], context}
 
-  defp emit_tree_node(_rest, [tag, [tag, inside]], context, _line, _offset),
-    do: {[{String.to_atom(tag), inside}], context}
+  defp emit_tree_node(rest, [tag, [tag, inside]], context, _line, _offset),
+    do: {rest, [{String.to_atom(tag), inside}], context}
 
-  defp emit_tree_node(_rest, [tag, [tag | nodes]], context, _line, _offset),
-    do: {[{String.to_atom(tag), nodes}], context}
+  defp emit_tree_node(rest, [tag, [tag | nodes]], context, _line, _offset),
+    do: {rest, [{String.to_atom(tag), nodes}], context}
 
-  defp emit_tree_node(_rest, [[text]], context, _line, _offset),
-    do: {[text], context}
+  defp emit_tree_node(rest, [[text]], context, _line, _offset),
+    do: {rest, [text], context}
 
-  defp emit_tree_node(_rest, [["[", text, "]"]], context, _line, _offset),
-    do: {["[" <> text <> "]"], context}
+  defp emit_tree_node(rest, [["[", text, "]"]], context, _line, _offset),
+    do: {rest, ["[" <> text <> "]"], context}
 
-  def parse(text) do
-    with {:ok, nodes, _, _, _, _} <- parse_tree(text) do
+  def parse(input) when is_binary(input) do
+    with {:ok, nodes, _, _, _, _} <- parse_tree(input) do
       {:ok, nodes}
     else
       {:error, e, _, _, _, _} ->
         {:error, e}
     end
+  end
+
+  def parse(nodes) when is_list(nodes) do
+    {:ok, nodes}
   end
 end
